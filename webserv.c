@@ -132,10 +132,7 @@ void conn_handler(int sd, struct sockaddr_in * connection){
       if(fd == -1){
 	printf("Error 404 file not found!\n");
   //send(int socket, const void *buffer, size_t length, int flags);
-	send_line(sd,"HTTP/1.1 404 NOT FOUND\r\n");
-	send_line(sd,"hmmm\r\n");
-	send_line(sd,"<html><head><title>404 Not Found</title></head>");
-	send_line(sd,"<body><h1>Sorry...  Requested URL not found!</h1></body></html>\r\n");
+	fd = open(".public/404.html", O_RDONLY, 0);	
       }
       else{//request file exist
 	printf("200 OK\n");
@@ -194,7 +191,7 @@ int recv_line(int sd, unsigned char * msg){
 }
 
 // function to send msg to the server continuously
-int send_line(int sd, unsigned char * msg){
+int send_line(int sd, unsigned char  *msg){
   int sent_bytes, bytes_to_send;
   bytes_to_send = strlen(msg);
   while(bytes_to_send>0){
