@@ -92,6 +92,7 @@ int main(void){
 void conn_handler(int sd, struct sockaddr_in * connection){
   unsigned char request[REQ_SIZE], response[REQ_SIZE];
   unsigned char * ptr;
+  unsigned char * new_ptr;
   int length = recv_line(sd,request);
   int fd;
   int isGet;
@@ -122,19 +123,31 @@ void conn_handler(int sd, struct sockaddr_in * connection){
     else{
       //read the actual commands
       if(ptr[strlen(ptr)-1] == '/'){
-	       strcat(ptr,"index.html");
+	       strcat(ptr,"404.html");
        }
       strcpy(response,ROOT_DIR);
       //get the file string ./dir/xxx.html
       strcat(response,ptr);
+      printf("%s\n", );
       fd = open(response,O_RDONLY,0);
       printf("Opening: \'%s\'\n", response);
       if(fd == -1){
-	printf("Error 404 file not found!\n");
-  //send(int socket, const void *buffer, size_t length, int flags);
-	fd = open(".public/404.html", O_RDONLY, 0);	
+	       printf("Error 404 file not found!\n");
+         close(fd);
+         strcat(new_ptr, "404.html");
+         strcpy(404_response,ROOT_DIR);
+         strcat(404_response,new_ptr);
+         printf("%s\n", 404_response );
+        //send(int socket, const void *buffer, size_t length, int flags);
+	       fd = open(404_response, O_RDONLY, 0);
+         if(fd == -1){
+           printf("open 404 fail\n");
+         }
+
+
+         printf(ptr);
       }
-      else{//request file exist
+      //request file exist
 	printf("200 OK\n");
 	send_line(sd,"HTTP/1.1 200 OK\r\n");
 	send_line(sd,"Server\r\n\r\n");
@@ -152,7 +165,7 @@ void conn_handler(int sd, struct sockaddr_in * connection){
 	  free(ptr);
 	}
 	close(fd);
-      }
+
     }
   }//end of valid HTTP
   shutdown(sd,2);
