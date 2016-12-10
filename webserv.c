@@ -1,15 +1,11 @@
 //std stuff
 #include <stdlib.h>
 #include <stdio.h>
-//networking stuff
 #include <sys/socket.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
-//string functions
 #include <string.h>
-//gives stats of a file
 #include <sys/stat.h>
-//file control
 #include <fcntl.h>
 
 
@@ -94,6 +90,7 @@ void conn_handler(int sd, struct sockaddr_in * connection){
   unsigned char * ptr;
   unsigned char * new_ptr;
   int length = recv_line(sd,request);
+  int error_length;
   int fd;
   int isGet;
   printf("Handling request from %s:%d \"%s\"\n",inet_ntoa(connection->sin_addr),
@@ -105,7 +102,6 @@ void conn_handler(int sd, struct sockaddr_in * connection){
   else{
     *ptr = '\0'; //this will make the ' ' be '\0' to terminate the string for simplicity
     ptr = NULL;
-    //simplify more
     //if the request GET
     if(strncmp(request, "GET ", 4) == 0){
       ptr = request+4;
@@ -123,31 +119,40 @@ void conn_handler(int sd, struct sockaddr_in * connection){
     else{
       //read the actual commands
       if(ptr[strlen(ptr)-1] == '/'){
-	       strcat(ptr,"404.html");
+	       strcat(ptr,"index.html");
        }
       strcpy(response,ROOT_DIR);
       //get the file string ./dir/xxx.html
       strcat(response,ptr);
-      printf("%s\n", );
       fd = open(response,O_RDONLY,0);
       printf("Opening: \'%s\'\n", response);
+      printf("%s\n", ptr);
       if(fd == -1){
+        close(fd);
 	       printf("Error 404 file not found!\n");
-         close(fd);
-         strcat(new_ptr, "404.html");
-         strcpy(404_response,ROOT_DIR);
-         strcat(404_response,new_ptr);
-         printf("%s\n", 404_response );
         //send(int socket, const void *buffer, size_t length, int flags);
-	       fd = open(404_response, O_RDONLY, 0);
+	       fd = open("./public/404.html", O_RDONLY, 0);
+         new_ptr = '/404.html';
          if(fd == -1){
            printf("open 404 fail\n");
          }
-
-
-         printf(ptr);
+        send_line(sd,"HTTP/1.1 200 OK\r\n");
+       	send_line(sd,"Server\r\n\r\n");
+        if((error_length = return_file_size(fd))==-1){
+    	    printf("Couldn't get file\'s size!\n");
+    	    exit(7);
+    	  }
+        if((new_ptr = (unsigned char *)malloc(length*sizeof(char)))==NULL){
+    	    printf("Memory could not be allocated!\n");
+    	    exit(8);
+    	  }
+        read(fd,new_ptr,error_length);
+     	  send(sd,new_ptr,error_length,0);
+        free(new_ptr);
+        close(fd);
       }
       //request file exist
+  else{
 	printf("200 OK\n");
 	send_line(sd,"HTTP/1.1 200 OK\r\n");
 	send_line(sd,"Server\r\n\r\n");
@@ -165,7 +170,7 @@ void conn_handler(int sd, struct sockaddr_in * connection){
 	  free(ptr);
 	}
 	close(fd);
-
+}
     }
   }//end of valid HTTP
   shutdown(sd,2);
