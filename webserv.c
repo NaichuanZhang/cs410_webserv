@@ -37,7 +37,6 @@ void conn_handler(int fd, struct sockaddr_in * connection);
 int return_file_size(int fd);
 int recv_line(int fd, unsigned char * msg);
 int send_line(int fd, unsigned char * msg);
-
 int main(void){
   int sock, new_sock;
   int yes = 1;
@@ -93,6 +92,7 @@ void conn_handler(int sd, struct sockaddr_in * connection){
   int error_length;
   int fd;
   int isGet;
+  int isCGI;
   printf("Handling request from %s:%d \"%s\"\n",inet_ntoa(connection->sin_addr),
 	 ntohs(connection->sin_port), request);
   ptr = strstr(request," HTTP/");
@@ -106,11 +106,14 @@ void conn_handler(int sd, struct sockaddr_in * connection){
     if(strncmp(request, "GET ", 4) == 0){
       ptr = request+4;
       isGet = 1;
+      printf("pointer value is:%s\n", ptr);
+
     }
     //if the request HEAD
     if(strncmp(request, "HEAD ", 5) == 0){
       ptr = request+5;
       isGet = 0;
+      printf("pointer value is:%s\n", ptr);
     }
     //NOT an HTTP request
     if(ptr == NULL){
@@ -118,15 +121,36 @@ void conn_handler(int sd, struct sockaddr_in * connection){
     }
     else{
       //read the actual commands
-      if(ptr[strlen(ptr)-1] == '/'){
-	       strcat(ptr,"index.html");
-       }
-      strcpy(response,ROOT_DIR);
-      //get the file string ./dir/xxx.html
-      strcat(response,ptr);
-      fd = open(response,O_RDONLY,0);
-      printf("Opening: \'%s\'\n", response);
-      printf("%s\n", ptr);
+      if(isGet == 1){
+        if(ptr[strlen(ptr)-1] == 'i'){
+          printf("reach this step\n");
+          if ( fork() != 0 )
+            return;
+          isCGI = 1;
+          ptr = ptr + 1; // skip the "/", now ptr = xxx.cgi;
+          FILE *fp;
+        	fp = fdopen(sd,"w");
+          //fd = open(ptr, O_WRONLY, 0);
+          fprintf(fp, "HTTP/1.0 200 OK\r\n");
+        	fflush(fp);
+        	dup2(sd, 1);
+        	dup2(sd, 2);
+        	close(sd);
+        	execl(ptr,ptr,NULL);
+        	perror(ptr);
+        }
+        else{
+          printf("%s\n", ptr);
+    	    strcat(ptr,"index.html");
+          printf("%s\n", ptr);
+          strcpy(response,ROOT_DIR);
+          //get the file string ./dir/xxx.html
+          strcat(response,ptr);
+          fd = open(response,O_RDONLY,0);
+          printf("Opening: \'%s\'\n", response);
+          printf("%s\n", ptr);
+        }
+      }
       if(fd == -1){
         close(fd);
 	       printf("Error 404 file not found!\n");
@@ -151,6 +175,7 @@ void conn_handler(int sd, struct sockaddr_in * connection){
         free(new_ptr);
         close(fd);
       }
+
       //request file exist
   else{
 	printf("200 OK\n");
@@ -171,6 +196,7 @@ void conn_handler(int sd, struct sockaddr_in * connection){
 	}
 	close(fd);
 }
+
     }
   }//end of valid HTTP
   shutdown(sd,2);
