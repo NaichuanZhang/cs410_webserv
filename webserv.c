@@ -81,6 +81,7 @@ int main(void){
     }
     conn_handler(new_sock,&client);
   }
+  exit(0);
   return 6;
 }
 
@@ -142,8 +143,9 @@ void conn_handler(int sd, struct sockaddr_in * connection){
         //TODO: else if dir / img / do ls --
         else if(type_dir(ptr+1)){// if its a dir -- do a ls command
           printf("reach dir step\n");
-          FILE	*fp ;
+          FILE	*fp;
         	fp = fdopen(sd,"w");
+          ptr = ptr + 1;
           fprintf(fp, "HTTP/1.0 200 OK\r\n");
           fprintf(fp, "Content-type: text/plain\r\n");
         	fprintf(fp,"\r\n");
@@ -151,12 +153,12 @@ void conn_handler(int sd, struct sockaddr_in * connection){
         	dup2(sd,1);
         	dup2(sd,2);
         	close(sd);
-        	execlp("ls","ls","-l",ptr+1,NULL);
+        	execlp("ls","ls","-l",ptr,NULL);
         	perror(ptr);
         	exit(1);
         }
 
-        else{
+        else{ //just normal web page
           printf("%s\n", ptr);
     	    strcat(ptr,"index.html");
           printf("%s\n", ptr);
@@ -164,56 +166,53 @@ void conn_handler(int sd, struct sockaddr_in * connection){
           //get the file string ./dir/xxx.html
           strcat(response,ptr);
           fd = open(response,O_RDONLY,0);
+
+          if(fd == -1){
+                  close(fd);
+                   printf("Error 404 file not found!\n");
+                  //send(int socket, const void *buffer, size_t length, int flags);
+                   fd = open("./public/404.html", O_RDONLY, 0);
+                   new_ptr = '/404.html';
+                   if(fd == -1){
+                     printf("open 404 fail\n");
+                   }
+                  send_line(sd,"HTTP/1.1 200 OK\r\n");
+                  send_line(sd,"Server\r\n\r\n");
+                  if((error_length = return_file_size(fd))==-1){
+                    printf("Couldn't get file\'s size!\n");
+                    exit(7);
+                  }
+                  if((new_ptr = (unsigned char *)malloc(length*sizeof(char)))==NULL){
+                    printf("Memory could not be allocated!\n");
+                    exit(8);
+                  }
+                  read(fd,new_ptr,error_length);
+                  send(sd,new_ptr,error_length,0);
+                  free(new_ptr);
+                  close(fd);
+                }
+
+          else{// if file exists
           printf("Opening: \'%s\'\n", response);
           printf("%s\n", ptr);
+        	printf("200 OK\n");
+        	send_line(sd,"HTTP/1.1 200 OK\r\n");
+        	send_line(sd,"Server\r\n\r\n");
+        	  if((length = return_file_size(fd))==-1){
+        	    printf("Couldn't get file\'s size!\n");
+        	    exit(7);
+        	  }
+        	  if((ptr = (unsigned char *)malloc(length*sizeof(char)))==NULL){
+        	    printf("Memory could not be allocated!\n");
+        	    exit(8);
+        	  }
+        	  read(fd,ptr,length);
+        	  send(sd,ptr,length,0);
+        	  free(ptr);
+        	close(fd);
+        }
         }
       }
-      if(fd == -1){
-        close(fd);
-	       printf("Error 404 file not found!\n");
-        //send(int socket, const void *buffer, size_t length, int flags);
-	       fd = open("./public/404.html", O_RDONLY, 0);
-         new_ptr = '/404.html';
-         if(fd == -1){
-           printf("open 404 fail\n");
-         }
-        send_line(sd,"HTTP/1.1 200 OK\r\n");
-       	send_line(sd,"Server\r\n\r\n");
-        if((error_length = return_file_size(fd))==-1){
-    	    printf("Couldn't get file\'s size!\n");
-    	    exit(7);
-    	  }
-        if((new_ptr = (unsigned char *)malloc(length*sizeof(char)))==NULL){
-    	    printf("Memory could not be allocated!\n");
-    	    exit(8);
-    	  }
-        read(fd,new_ptr,error_length);
-     	  send(sd,new_ptr,error_length,0);
-        free(new_ptr);
-        close(fd);
-      }
-
-      //request file exist
-  else{
-	printf("200 OK\n");
-	send_line(sd,"HTTP/1.1 200 OK\r\n");
-	send_line(sd,"Server\r\n\r\n");
-	if(isGet == 1){
-	  if((length = return_file_size(fd))==-1){
-	    printf("Couldn't get file\'s size!\n");
-	    exit(7);
-	  }
-	  if((ptr = (unsigned char *)malloc(length*sizeof(char)))==NULL){
-	    printf("Memory could not be allocated!\n");
-	    exit(8);
-	  }
-	  read(fd,ptr,length);
-	  send(sd,ptr,length,0);
-	  free(ptr);
-	}
-	close(fd);
-}
-
     }
   }//end of valid HTTP
   shutdown(sd, 2);

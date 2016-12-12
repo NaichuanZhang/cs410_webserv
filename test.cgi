@@ -6,3 +6,4 @@ print <<EndOfHTML;
 <h2>Hello, world!</h2>
 </body></html>
 EndOfHTML
+exit 1;
