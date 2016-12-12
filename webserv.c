@@ -81,7 +81,7 @@ int main(void){
     }
     conn_handler(new_sock,&client);
   }
-  return 6;//exited for no reason! I must stay infinite loop
+  return 6;
 }
 
 
@@ -123,23 +123,39 @@ void conn_handler(int sd, struct sockaddr_in * connection){
     else{
       //read the actual commands
       if(isGet == 1){
-        if( strcmp(file_type(ptr), "cgi") == 0 ){
-          printf("reach this step\n");
-          if ( fork() != 0 )
-            return;
+        if( strcmp(file_type(ptr), "cgi") == 0 ){//cgi scrpits
+          printf("reach cgi step\n");
           isCGI = 1;
           ptr = ptr + 1; // skip the "/", now ptr = xxx.cgi;
           FILE *fp;
         	fp = fdopen(sd,"w");
-          //fd = open(ptr, O_WRONLY, 0);
           fprintf(fp, "HTTP/1.0 200 OK\r\n");
+          //fd = open(ptr, O_WRONLY, 0);
+          //send_line(sd,"HTTP/1.1 200 OK\r\n");
         	fflush(fp);
         	dup2(sd, 1);
         	dup2(sd, 2);
-        	close(sd);
+          close(sd);
         	execl(ptr,ptr,NULL);
         	perror(ptr);
         }
+        //TODO: else if dir / img / do ls --
+        else if(type_dir(ptr+1)){// if its a dir -- do a ls command
+          printf("reach dir step\n");
+          FILE	*fp ;
+        	fp = fdopen(sd,"w");
+          fprintf(fp, "HTTP/1.0 200 OK\r\n");
+          fprintf(fp, "Content-type: text/plain\r\n");
+        	fprintf(fp,"\r\n");
+        	fflush(fp);
+        	dup2(sd,1);
+        	dup2(sd,2);
+        	close(sd);
+        	execlp("ls","ls","-l",ptr+1,NULL);
+        	perror(ptr);
+        	exit(1);
+        }
+
         else{
           printf("%s\n", ptr);
     	    strcat(ptr,"index.html");
@@ -200,7 +216,8 @@ void conn_handler(int sd, struct sockaddr_in * connection){
 
     }
   }//end of valid HTTP
-  shutdown(sd,2);
+  shutdown(sd, 2);
+  //fclose(sd);
 }
 
 
@@ -256,4 +273,10 @@ char * file_type(char *f)
 	if ( (cp = strrchr(f, '.' )) != NULL )
 		return cp+1;
 	return "";
+}
+//check for directory
+type_dir(char *ptr)
+{
+	struct stat stats;
+	return ( stat(ptr, &stats) != -1 && S_ISDIR(stats.st_mode) );
 }
