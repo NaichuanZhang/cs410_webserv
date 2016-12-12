@@ -37,6 +37,7 @@ void conn_handler(int fd, struct sockaddr_in * connection);
 int return_file_size(int fd);
 int recv_line(int fd, unsigned char * msg);
 int send_line(int fd, unsigned char * msg);
+char * file_type(char *f);
 int main(void){
   int sock, new_sock;
   int yes = 1;
@@ -122,7 +123,7 @@ void conn_handler(int sd, struct sockaddr_in * connection){
     else{
       //read the actual commands
       if(isGet == 1){
-        if(ptr[strlen(ptr)-1] == 'i'){
+        if( strcmp(file_type(ptr), "cgi") == 0 ){
           printf("reach this step\n");
           if ( fork() != 0 )
             return;
@@ -245,4 +246,14 @@ int send_line(int sd, unsigned char  *msg){
     bytes_to_send -= sent_bytes;
     msg += sent_bytes;
   }
+}
+
+//type checking for different file
+char * file_type(char *f)
+/* returns 'extension' of file */
+{
+	char	*cp;
+	if ( (cp = strrchr(f, '.' )) != NULL )
+		return cp+1;
+	return "";
 }
