@@ -1,260 +1,182 @@
-//std stuff
 #include <stdlib.h>
+#include <signal.h>
+#include <sys/wait.h>
 #include <stdio.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/stat.h>
 #include <sys/socket.h>
-#include <arpa/inet.h>
+#include <netdb.h>
 #include <netinet/in.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <fcntl.h>
 
-
 #ifndef PORT
 #define PORT 8080
 #endif
 
-#ifndef ROOT_DIR
-#define ROOT_DIR "./public"
-#endif
 
-#ifndef REQ_SIZE
-#define REQ_SIZE 500
-#endif
+char *file_type(char *);
+int return_file_size(int);
+int isExist(char *);
+int isCGI(char *);
+ 
+int main(int argc, char *argv[]) {// sample socket code
+	  int sock_opt_val = 1;
+	  int cli_len;
+	  char data[800];		/* Our receive data buffer. */
 
-#ifndef BUFF_SZ
-#define BUFF_SZ 32
-#endif
+    void recv_line(FILE *fp);
+    void servConn( char *request, int new_sd );
+	  struct sockaddr_in name, cli_name;
+    int 	sd, new_sd;
+    FILE	*fd;
+    char	request[BUFSIZ];
 
-#ifndef EOL
-#define EOL "\r\n"
-#endif
+		if ((sd = socket (AF_INET, SOCK_STREAM, 0)) < 0) {
+	    perror("(servConn): socket() error");
+	    exit (-1);
+	  }
+		fprintf(stderr,"Server socket new_sd: %d\n", sd);
+	  if (setsockopt (sd, SOL_SOCKET, SO_REUSEADDR, (char *) &sock_opt_val,
+			  sizeof(sock_opt_val)) < 0) {
+	    perror ("(servConn): Failed to set SO_REUSEADDR on INET socket");
+	    exit (-1);
+	  }
 
-#ifndef EOL_SZ
-#define EOL_SZ 2
-#endif
+		memset(&name, 0, sizeof(name));
+    name.sin_family = AF_INET;
+    name.sin_addr.s_addr = htonl(INADDR_ANY);
+    name.sin_port = htons(PORT);
 
-void conn_handler(int fd, struct sockaddr_in * connection);
-int return_file_size(int fd);
-int recv_line(int fd, unsigned char * msg);
-int send_line(int fd, unsigned char * msg);
-char * file_type(char *f);
-int execl(const char*,const char*, ...);
-int execlp(const char*,const char*, ...);
+    bind(sd, (struct sockaddr *) &name, sizeof(name));
+    listen(sd, 5);
+		fprintf(stderr,"Server is up and running!!!\n");
+    /* main loop here */
+    while(1) {
+        /* take a call and buffer it */
 
-int main(void){
-  int sock, new_sock;
-  int yes = 1;
-  struct sockaddr_in host, client;
-  socklen_t sin_size;
-
-  if((sock = socket(AF_INET,SOCK_STREAM,0))==-1){
-    printf("Socket creation error!\n");
-    return 1;
-  }
-
-  if((setsockopt(sock,SOL_SOCKET,SO_REUSEADDR,&yes,sizeof(int)))==-1){
-    printf("Socket options error!\n");
-    return 2;
-  }
-
-  //to bind the socket information..-- basic step
-  host.sin_family = AF_INET;
-  host.sin_port = htons(PORT);
-  host.sin_addr.s_addr = INADDR_ANY;
-  memset(&host.sin_zero,'\0',8);
-
-  //binding the socket
-  if((bind(sock,(struct sockaddr *)&host,sizeof(struct sockaddr)))==-1){
-    printf("Error binding the socket!\n");
-    return 3;
-  }
-
-  //listen to the socket
-  if (listen(sock,10)==-1){
-    printf("Error listening to socket!\n");
-    return 4;
-  }
-  printf("The server is up and running!\n");
-  while(1){
-    sin_size = sizeof(struct sockaddr_in); //get the size of sockaddr_in
-    new_sock = accept(sock,(struct sockaddr *)&client,&sin_size);
-    if (new_sock == -1){
-      printf("Error accepting connection!\n");
-      return 5;
+        new_sd = accept (sd, (struct sockaddr *) &cli_name, &cli_len);
+				if (new_sd == -1){
+		      printf("Error accepting connection!\n");
+		      return 5;
+		    }
+        fd = fdopen(new_sd, "r" );
+        fgets(request, BUFSIZ, fd); //read the request
+        printf("request is = %s", request);
+        recv_line(fd);
+        servConn(request, new_sd);
+        fclose(fd);
     }
-    conn_handler(new_sock,&client);
-  }
-  exit(0);
-  return 6;
 }
 
 
-void conn_handler(int sd, struct sockaddr_in * connection){
-  unsigned char request[REQ_SIZE], response[REQ_SIZE];
-  unsigned char * ptr;
-  unsigned char * new_ptr;
-  int length = recv_line(sd,request);
-  int error_length;
-  int fd;
-  int isGet;
-  int isCGI;
-  printf("Handling request from %s:%d \"%s\"\n",inet_ntoa(connection->sin_addr),
-	 ntohs(connection->sin_port), request);
-  ptr = strstr(request," HTTP/");
-  if(ptr == NULL){
-    printf("Not a valid HTTP request!\n");
-  }//check if request is valid HTTP
-  else{
-    *ptr = '\0'; //this will make the ' ' be '\0' to terminate the string for simplicity
-    ptr = NULL;
-    //if the request GET
-    if(strncmp(request, "GET ", 4) == 0){
-      ptr = request+4;
-      isGet = 1;
-      printf("pointer value is:%s\n", ptr);
-
-    }
-    //if the request HEAD
-    if(strncmp(request, "HEAD ", 5) == 0){
-      ptr = request+5;
-      isGet = 0;
-      printf("pointer value is:%s\n", ptr);
-    }
-    //NOT an HTTP request
-    if(ptr == NULL){
-      printf("Unknown request!\n");
-    }
-    else{
-      //read the actual commands
-      if(isGet == 1){
-        if( strcmp(file_type(ptr), "cgi") == 0 ){//cgi scrpits
-          printf("reach cgi step\n");
-          isCGI = 1;
-          ptr = ptr + 1; // skip the "/", now ptr = xxx.cgi;
-          FILE *fp;
-        	fp = fdopen(sd,"w");
-          fprintf(fp, "HTTP/1.0 200 OK\r\n");
-          //fd = open(ptr, O_WRONLY, 0);
-          //send_line(sd,"HTTP/1.1 200 OK\r\n");
-        	fflush(fp);
-        	dup2(sd, 1);
-        	dup2(sd, 2);
-          close(sd);
-        	execl(ptr,ptr,NULL);
-        	perror(ptr);
-        }
-        //TODO: else if dir / img / do ls --
-        else if(type_dir(ptr+1)){// if its a dir -- do a ls command
-          printf("reach dir step\n");
-          FILE	*fp;
-        	fp = fdopen(sd,"w");
-          ptr = ptr + 1;
-          fprintf(fp, "HTTP/1.0 200 OK\r\n");
-          fprintf(fp, "Content-type: text/plain\r\n");
-        	fprintf(fp,"\r\n");
-        	fflush(fp);
-        	dup2(sd,1);
-        	dup2(sd,2);
-        	close(sd);
-        	execlp("ls","ls","-l",ptr,NULL);
-        	perror(ptr);
-        	exit(1);
-        }
-
-        else{ //just normal web page
-          printf("%s\n", ptr);
-    	    strcat(ptr,"index.html"); // 
-          printf("%s\n", ptr);
-          strcpy(response,ROOT_DIR);
-          //get the file string ./dir/xxx.html
-          strcat(response,ptr);
-          fd = open(response,O_RDONLY,0);
-
-          if(fd == -1){
-                  close(fd);
-                   printf("Error 404 file not found!\n");
-                  //send(int socket, const void *buffer, size_t length, int flags);
-                   fd = open("./public/404.html", O_RDONLY, 0);
-                   new_ptr = "/404.html";
-                   if(fd == -1){
-                     printf("open 404 fail\n");
-                   }
-                  send_line(sd,"HTTP/1.1 200 OK\r\n");
-                  send_line(sd,"Server\r\n\r\n");
-                  if((error_length = return_file_size(fd))==-1){
-                    printf("Couldn't get file\'s size!\n");
-                    exit(7);
-                  }
-                  if((new_ptr = (unsigned char *)malloc(length*sizeof(char)))==NULL){
-                    printf("Memory could not be allocated!\n");
-                    exit(8);
-                  }
-                  read(fd,new_ptr,error_length);
-                  send(sd,new_ptr,error_length,0);
-                  free(new_ptr);
-                  close(fd);
-                }
-
-          else{// if file exists
-          printf("Opening: \'%s\'\n", response);
-          printf("%s\n", ptr);
-        	printf("200 OK\n");
-        	send_line(sd,"HTTP/1.1 200 OK\r\n");
-        	send_line(sd,"Server\r\n\r\n");
-        	  if((length = return_file_size(fd))==-1){
-        	    printf("Couldn't get file\'s size!\n");
-        	    exit(7);
-        	  }
-        	  if((ptr = (unsigned char *)malloc(length*sizeof(char)))==NULL){
-        	    printf("Memory could not be allocated!\n");
-        	    exit(8);
-        	  }
-        	  read(fd,ptr,length);
-        	  send(sd,ptr,length,0);
-        	  free(ptr);
-        	close(fd);
-        }
-        }
-      }
-    }
-  }//end of valid HTTP
-  shutdown(sd, 2);
-  //fclose(sd);
+void recv_line(FILE *fp) {
+    char	buf[BUFSIZ]; //BUFSIZ is a build in value for stream
+    while( fgets(buf,BUFSIZ,fp) != NULL && strcmp(buf,"\r\n") != 0 );
 }
 
 
 
 
-//return the file size
-int return_file_size(int fd){
-  struct stat file_stats;
-  if(fstat(fd,&file_stats)==-1)
-    return -1;
-  return (int)(file_stats.st_size);
+void servConn(char *request, int fd) {
+   FILE *fp,*fp_sd, *new_fp;
+    int	c,fdis,length;
+    unsigned char * new_ptr;       
+
+    char requests[BUFSIZ], ptr[BUFSIZ];
+		//child process
+    if ( fork() != 0 )
+        return;
+
+    strcpy(ptr, "./");
+    if ( sscanf(request, "%s%s", requests, ptr+2) != 2 )
+		//pass the request to requests variable
+        return;
+
+    if ( strcmp(requests,"GET") != 0 ){
+			fp = fdopen(fd,"w");
+			fprintf(fp, "HTTP/1.0 501 Unknown command\r\n");
+			fprintf(fp, "Content-type: text/plain\r\n");
+			fprintf(fp, "\r\n");
+			fprintf(fp, "Unknown request\r\n");
+			fclose(fp);
+		}
+    else if (isExist(ptr)){
+	    fp = fdopen(fd,"w");
+	    fprintf(fp, "HTTP/1.0 404 Not Found\r\n");
+	    fprintf(fp, "Content-type: text/plain\r\n");
+	    fprintf(fp, "\r\n");
+	    fprintf(fp, "Your file %s\r\nis not found\r\n",ptr);
+	    fclose(fp);
+		}
+    else if (type_dir(ptr)){
+	    fp = fdopen(fd,"w");
+	    fprintf(fp, "HTTP/1.0 200 OK\r\n");
+	    fprintf(fp, "Content-type: %s\r\n", "text/plain");
+	    fprintf(fp,"\r\n");
+	    fflush(fp);
+	    dup2(fd,1);
+	    dup2(fd,2);
+	    close(fd);
+	    execlp("ls","ls","-l",ptr,NULL);
+	    perror(ptr);
+	    exit(1);
+		}
+    else if ( strcmp(file_type(ptr), "cgi") == 0  ) {
+	    fp = fdopen(fd,"w");
+ 	    fprintf(fp, "HTTP/1.0 200 OK\r\n");
+	    fflush(fp);
+	    dup2(fd, 1);
+	    dup2(fd, 2);
+	    close(fd);
+	    execl(ptr,ptr,NULL);
+	    perror(ptr);
+		}
+    else {
+			char	*type_ext = file_type(ptr);
+      //default
+	    char	*header_type = "text/plain";
+
+      if ( strcmp(type_ext,"html") == 0 )
+	        header_type = "text/html";
+	    fp_sd = fdopen(fd, "w");
+	    new_fp = fopen( ptr , "r");
+	    if ( fp_sd != NULL && new_fp != NULL ) {
+	        fprintf(fp_sd, "HTTP/1.0 200 OK\r\n");
+		fprintf(fp_sd, "Content-type: %s\r\n", header_type );
+	        fprintf(fp_sd, "\r\n");
+	        while( (c = getc(new_fp) ) != EOF )
+	        putc(c, fp_sd);
+	        fclose(new_fp);
+	        fclose(fp_sd);
+	    }
+	    exit(0);
+		}
 }
 
-int recv_line(int sd, unsigned char * msg){
-  unsigned char * ptr;
-  int eol_counter = 0;
-  ptr = msg;
-  //receive messages from a socket
-  while(recv(sd,ptr,1,0)==1){
-    if(*ptr == EOL[eol_counter]){
-      eol_counter++;
-      if(eol_counter == EOL_SZ){
-	       *(ptr+1-EOL_SZ) = '\0';
-	        return strlen(msg);
-      }
-    }
-    else{
-      eol_counter = 0;
-    }
-    ptr++;
-  }
-  return 0;  //no EOL.. shouldnt happen
+
+
+int isExist(char *ptr) {
+    struct stat info;
+    return( stat(ptr,&info) == -1 );
 }
 
-// function to send msg to the server continuously
+
+char *file_type(char *ptr) {
+    char	*cp;
+    if ( (cp = strrchr(ptr, '.' )) != NULL )
+        return cp+1;
+    return "";
+}
+
+int type_dir(char *ptr)
+{
+	struct stat stats;
+	return ( stat(ptr, &stats) != -1 && S_ISDIR(stats.st_mode) );
+}
+
 int send_line(int sd, unsigned char  *msg){
   int sent_bytes, bytes_to_send;
   bytes_to_send = strlen(msg);
@@ -267,18 +189,10 @@ int send_line(int sd, unsigned char  *msg){
   }
 }
 
-//type checking for different file
-char * file_type(char *f)
-/* returns 'extension' of file */
-{
-	char	*cp;
-	if ( (cp = strrchr(f, '.' )) != NULL )
-		return cp+1;
-	return "";
-}
-//check for directory
-type_dir(char *ptr)
-{
-	struct stat stats;
-	return ( stat(ptr, &stats) != -1 && S_ISDIR(stats.st_mode) );
+//return the file size
+int return_file_size(int fd){
+  struct stat file_stats;
+  if(fstat(fd,&file_stats)==-1)
+    return -1;
+  return (int)(file_stats.st_size);
 }
