@@ -81,17 +81,17 @@ void servConn(char *request, int fd) {
     int isExist(char *ptr);
     int isCGI(char *ptr);
 
-    char	cmd[BUFSIZ], ptr[BUFSIZ];
+    char	requests[BUFSIZ], ptr[BUFSIZ];
 		//child process
     if ( fork() != 0 )
         return;
 
     strcpy(ptr, "./");
-    if ( sscanf(request, "%s%s", cmd, ptr+2) != 2 )
-		//pass the request to cmd variable
+    if ( sscanf(request, "%s%s", requests, ptr+2) != 2 )
+		//pass the request to requests variable
         return;
 
-    if ( strcmp(cmd,"GET") != 0 ){
+    if ( strcmp(requests,"GET") != 0 ){
 			FILE	*fp = fdopen(fd,"w");
 			fprintf(fp, "HTTP/1.0 501 Unknown command\r\n");
 			fprintf(fp, "Content-type: text/plain\r\n");
@@ -133,35 +133,28 @@ void servConn(char *request, int fd) {
 	    perror(ptr);
 		}
     else {
-			char	*extension = file_type(ptr);
+			char	*type_ext = file_type(ptr);
       //default
 	    char	*header_type = "text/plain";
-	    FILE	*fpsock, *fpfile;
+	    FILE	*fp_sd, *new_fp;
 	    int	c;
       int fdis;
       int length;
       unsigned char * new_ptr;
-      new_ptr = "./public/index.html";
-      if (fdis = open("./public/index.html",O_RDONLY,0) == -1)
-          printf("fail to open file\n" );
-	    if ( strcmp(extension,"html") == 0 )
+      if ( strcmp(type_ext,"html") == 0 )
 	        header_type = "text/html";
-      printf("200 OK\n");
-      send_line(fd,"HTTP/1.1 200 OK\r\n");
-      printf("%s\n", new_ptr);
-      send_line(fd, "Content-type: text/html\r\n");
-      if((length = return_file_size(fdis))==-1){
-        printf("Couldn't get file\'s size!\n");
-        exit(7);
-      }
-      if((new_ptr = (unsigned char *)malloc(length*sizeof(char)))==NULL){
-        printf("Memory could not be allocated!\n");
-        exit(8);
-      }
-      read(fdis,new_ptr,length);
-      send(fd,new_ptr,length,0);
-      free(new_ptr);
-      close(fdis);
+	    fp_sd = fdopen(fd, "w");
+	    new_fp = fopen( ptr , "r");
+	    if ( fp_sd != NULL && new_fp != NULL ) {
+	        fprintf(fp_sd, "HTTP/1.0 200 OK\r\n");
+					fprintf(fp_sd, "Content-type: %s\r\n", header_type );
+	        fprintf(fp_sd, "\r\n");
+	        while( (c = getc(new_fp) ) != EOF )
+	            putc(c, fp_sd);
+	        fclose(new_fp);
+	        fclose(fp_sd);
+	    }
+	    exit(0);
 		}
 }
 
