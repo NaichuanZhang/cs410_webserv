@@ -5,7 +5,7 @@ line 166 - why are you just appending index to any normal http request?
     -- Initially I wanted to render index.html when people just hit the ip address so it act like a normal server.
     In the new code I just defaulted the 127.0.0.1/ to render the root directory.
 line 156 - not exactly an issue, just curious as to why you're dup2'ing the stdout and then the stderr (wouldn't this overwrite?)
-    -- Only dup2 to 1 is actually needed.
+    -- Only dup2 to 1 is actually needed. Dup2 the std error is for when there is an error opening the file, it will display the error message on web.
 
 When just opening root directory on the normally running server:
 Appends index, works great
