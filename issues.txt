@@ -1,0 +1,22 @@
+
+Fixed all the warnings
+
+line 166 - why are you just appending index to any normal http request?
+line 156 - not exactly an issue, just curious as to why you're dup2'ing the stdout and then the stderr (wouldn't this overwrite?)
+
+
+When just opening root directory on the normally running server:
+Appends index, works great
+...
+Handling request from 127.0.0.1:45563 "GET /favicon.ico HTTP/1.1"
+pointer value is:/favicon.ico
+/favicon.ico
+...
+Attempts to append index to favicon.ico
+Aborts
+
+Favicon is a standard http thing, but we never specified it, is there a way to handle this implicitly or should we just create a favicon to fit into the structure?
+
+Second half is due to the appending outlined in line 166
+
+

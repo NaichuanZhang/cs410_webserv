@@ -38,6 +38,9 @@ int return_file_size(int fd);
 int recv_line(int fd, unsigned char * msg);
 int send_line(int fd, unsigned char * msg);
 char * file_type(char *f);
+int execl(const char*,const char*, ...);
+int execlp(const char*,const char*, ...);
+
 int main(void){
   int sock, new_sock;
   int yes = 1;
@@ -160,7 +163,7 @@ void conn_handler(int sd, struct sockaddr_in * connection){
 
         else{ //just normal web page
           printf("%s\n", ptr);
-    	    strcat(ptr,"index.html");
+    	    strcat(ptr,"index.html"); // 
           printf("%s\n", ptr);
           strcpy(response,ROOT_DIR);
           //get the file string ./dir/xxx.html
@@ -172,7 +175,7 @@ void conn_handler(int sd, struct sockaddr_in * connection){
                    printf("Error 404 file not found!\n");
                   //send(int socket, const void *buffer, size_t length, int flags);
                    fd = open("./public/404.html", O_RDONLY, 0);
-                   new_ptr = '/404.html';
+                   new_ptr = "/404.html";
                    if(fd == -1){
                      printf("open 404 fail\n");
                    }
