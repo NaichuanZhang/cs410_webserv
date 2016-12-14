@@ -28,7 +28,8 @@ static size_t pathlen;
 int
 main(int argc, char *argv[])
 {
-  int ret, x;
+  int ret;
+  FILE *fc;
   char str [15];   
 
   if (argc != 2)
@@ -36,28 +37,11 @@ main(int argc, char *argv[])
 
   ret = myftw(argv[1], myfunc); /* does it all */
   
-   char *filename = "file_counter_output.txt";
+   const char *filename = "filecount.dat";
    
+   fc = fopen(filename, "w");
 
-   x = open(filename, O_WRONLY | O_CREAT, 0666);
-
-/*	
-   write(x, nreg, 1);
-   write(x, ndir, 1);
-   write(x, nchr, 1); 
-   write(x, nfifo, 1);
-   write(x, nslink, 1);
-   write(x, nsock, 1);
-*/
-
-printf("regular files = %7ld\n", nreg);
-  printf("directories = %7ld\n", ndir);
-  printf("block special = %7ld \n", nblk);
-  printf("char special = %7ld, \n", nchr);
-  printf("FIFOs = %7ld,  \n", nfifo);
-  printf("symbolic links = %7ld \n", nslink);
-  printf("sockets = %7ld \n", nsock);
-
+  fprintf(fc,"%ld\n%ld\n%ld\n%ld\n%ld\n%ld\n%ld\n", nreg,ndir,nblk,nchr,nfifo,nslink,nsock);
 
   exit(ret);
 
