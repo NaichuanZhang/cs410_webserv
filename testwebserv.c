@@ -135,7 +135,8 @@ void servConn(char *request, int fd) {
 	    perror(ptr);
 		}
 		else if( strcmp(file_type(ptr), "py") == 0){// use gcc -o testwebserv testwebserv.c -lcurl to compile
-			system("python weather.py"); // output temp in C in the console.
+			if (system("python weather.py") < 0) // output temp in C in the console.
+				fprintf(fp, "Can't get weather"); 
 			CURL *hnd = curl_easy_init();
 			curl_easy_setopt(hnd, CURLOPT_CUSTOMREQUEST, "GET");
 			curl_easy_setopt(hnd,CURLOPT_URL,"http://api.openweathermap.org/data/2.5/weather?zip=02215%2Cus&appid=11dbf4b98c1530853a5ff0671245754f");
@@ -150,9 +151,7 @@ void servConn(char *request, int fd) {
       //default
 	    char	*header_type = "text/plain";
 	    FILE	*fp_sd, *new_fp;
-	    int	c;
-      int fdis;
-      int length;
+	    int	c,fdis,length;
       unsigned char * new_ptr;
       if ( strcmp(type_ext,"html") == 0 )
 	        header_type = "text/html";
@@ -179,7 +178,7 @@ int isExist(char *ptr) {
 }
 
 
-char *file_type(char *ptr) {
+char *file_type(char *ptr) { //this only works for direct IP lookup, wouldn't work for DNS, or named domains
     char	*cp;
     if ( (cp = strrchr(ptr, '.' )) != NULL )
         return cp+1;
