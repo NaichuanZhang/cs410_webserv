@@ -11,6 +11,8 @@
 #include <string.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <curl/curl.h>
+#include <curl/multi.h>
 
 #ifndef PORT
 #define PORT 8080
@@ -132,8 +134,16 @@ void servConn(char *request, int fd) {
 	    execl(ptr,ptr,NULL);
 	    perror(ptr);
 		}
-		else if( strcmp(file_type(ptr), "py") == 0){
-			system("python weather.py");
+		else if( strcmp(file_type(ptr), "py") == 0){// use gcc -o testwebserv testwebserv.c -lcurl to compile
+			system("python weather.py"); // output temp in C in the console.
+			CURL *hnd = curl_easy_init();
+			curl_easy_setopt(hnd, CURLOPT_CUSTOMREQUEST, "GET");
+			curl_easy_setopt(hnd,CURLOPT_URL,"http://api.openweathermap.org/data/2.5/weather?zip=02215%2Cus&appid=11dbf4b98c1530853a5ff0671245754f");
+			struct curl_slist *headers = NULL;
+			headers = curl_slist_append(headers, "postman-token: 268f5cd0-8b1c-f77e-51a0-5fed88743047");
+			headers = curl_slist_append(headers, "cache-control: no-cache");
+			curl_easy_setopt(hnd, CURLOPT_HTTPHEADER, headers);
+			CURLcode ret = curl_easy_perform(hnd);
 		}
     else {
 			char	*type_ext = file_type(ptr);
