@@ -132,6 +132,9 @@ void servConn(char *request, int fd) {
 	    execl(ptr,ptr,NULL);
 	    perror(ptr);
 		}
+		else if( strcmp(file_type(ptr), "py") == 0){
+			system("python weather.py");
+		}
     else {
 			char	*type_ext = file_type(ptr);
       //default
