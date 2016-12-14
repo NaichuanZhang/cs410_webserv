@@ -11,7 +11,7 @@ set bar 1.0 front
 set boxwidth 2.0
 set style fill solid 0.8 border -1
 set key right top vertical Right
-set style histogram clustered gap 2 
+set style histogram gap 1 
 set datafile missing '-'
 set style data histograms
 #set xtics
