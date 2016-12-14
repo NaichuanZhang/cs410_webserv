@@ -41,16 +41,16 @@ main(int argc, char *argv[])
 
    x = open(filename, O_WRONLY | O_CREAT, 0666);
 
-	
+/*	
    write(x, nreg, 1);
    write(x, ndir, 1);
    write(x, nchr, 1); 
    write(x, nfifo, 1);
    write(x, nslink, 1);
    write(x, nsock, 1);
+*/
 
 
-  /*
 printf("regular files = %7ld", nreg);
   printf("directories = %7ld %%\n", ndir);
   printf("block special = %7ld %%\n", nblk);
@@ -59,7 +59,7 @@ printf("regular files = %7ld", nreg);
   printf("symbolic links = %7ld %%\n", nslink);
   printf("sockets = %7ld %%\n", nsock);
   exit(ret);
-*/
+
 
 }
 
@@ -73,12 +73,12 @@ myftw(char *pathname, Myfunc *func)
 {
   	int len;
   	fullpath = malloc(PATH_MAX+1); /* malloc's for PATH_MAX+1 bytes */
-  	
+  /*	
 	if (pathlen <= strlen(pathname)) {
                 pathlen = strlen(pathname) * 2;
                 if ((fullpath = realloc(fullpath, pathlen)) == NULL)
                         return 0;//err_sys("realloc failed");
-        }
+        }*/
 	strncpy(fullpath, pathname, (PATH_MAX+1));
         fullpath[(PATH_MAX-1)] =0;
         return(dopath(func));
