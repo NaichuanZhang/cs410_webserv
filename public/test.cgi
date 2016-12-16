@@ -1,7 +1,7 @@
 #!/usr/bin/perl
 
 system("gcc", "-o", "file_counts", "file_counts.c");
-system("./file_counts", "/data");
+system("./file_counts", "/");
 
 open(gplot,"| gnuplot -persistent") or die "Error while piping: $! \n";
 print gplot << "GNU_EOF";
