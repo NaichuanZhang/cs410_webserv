@@ -37,11 +37,13 @@ main(int argc, char *argv[])
 
   ret = myftw(argv[1], myfunc); /* does it all */
   
-   const char *filename = "filecount.dat";
+   const char *filename = "file_count.dat";
    
    fc = fopen(filename, "w");
 
-  fprintf(fc,"%ld\n%ld\n%ld\n%ld\n%ld\n%ld\n%ld\n", nreg,ndir,nblk,nchr,nfifo,nslink,nsock);
+//  fprintf(fc,"%ld\n%ld\n%ld\n%ld\n%ld\n%ld\n%ld\n", nreg,ndir,nblk,nchr,nfifo,nslink,nsock);
+
+    fprintf(fc,"Regular %ld\nDirectory %ld\nBlock %ld\nCharacter %ld\nFIFO %ld\nSymLink %ld\nSocket %ld\n", nreg,ndir,nblk,nchr,nfifo,nslink,nsock);
 
   exit(ret);
 
@@ -106,7 +108,7 @@ dopath(Myfunc* func)
         ptr[-1] = 0; /* erase everything from slash onwards */
 
         if (closedir(dp) < 0){
-                printf("can't close directory %s", fullpath);
+                printf("can't close directory %s\n", fullpath);
         }
         return(ret);
 
@@ -136,13 +138,13 @@ myfunc(const char *pathname, const struct stat *statptr, int type)
 	  ndir++;
 	  break;
 	case FTW_DNR:
-	  printf("can't read directory %s", pathname);
+	  printf("can't read directory %s\n", pathname);
 	  break;
 	case FTW_NS:
-	  printf("stat error for %s", pathname);
+	  printf("stat error for %s\n", pathname);
 	  break;
 	default:
-	  printf("unknown type %d for pathname %s", type, pathname);
+	  printf("unknown type %d for pathname %s\n", type, pathname);
 	}
 	return(0);
 }
