@@ -26,18 +26,5 @@ plot 'file_count.dat' using 2:xticlabels(1)
 GNU_EOF
 close(gplot);
 
-print "Content-type: text/html\n\n";
-print <<EndOfHTML;
-<html><head><title>File Count Test</title></head>
-<body>
-
-<h2 align="middle">Results</h2>
-<p>
-<img src="file_count.jpg" align="middle">
-</p>
-
-</body>
-</html>
-EndOfHTML
-
 exit 1;
+
