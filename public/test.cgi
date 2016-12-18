@@ -1,13 +1,15 @@
 #!/usr/bin/perl
 
+my $dir = $ARGV[0];
+
 system("gcc", "-o", "file_counts", "file_counts.c");
-system("./file_counts", "/");
+system("./file_counts", $dir);
 
 open(gplot,"| gnuplot -persistent") or die "Error while piping: $! \n";
 print gplot << "GNU_EOF";
 
 set terminal jpeg font "Helvetica" 11
-set output 'file_count.jpg'
+set output 'public/file_count.jpg'
 set autoscale y
 set bar 1.0 front
 set boxwidth 1.8
