@@ -21,7 +21,7 @@ char *file_type(char *);
 int return_file_size(int);
 int isExist(char *);
 int isCGI(char *);
- 
+
 int main(int argc, char *argv[]) {// sample socket code
 	  int sock_opt_val = 1;
 	  int cli_len;
@@ -83,7 +83,7 @@ void recv_line(FILE *fp) {
 void servConn(char *request, int fd) {
    FILE *fp,*fp_sd, *new_fp;
     int	c,fdis,length;
-    unsigned char * new_ptr;       
+    unsigned char * new_ptr;
 
     char requests[BUFSIZ], ptr[BUFSIZ];
 		//child process
@@ -133,6 +133,10 @@ void servConn(char *request, int fd) {
 	    close(fd);
 	    execl(ptr,ptr,NULL);
 	    perror(ptr);
+		}
+    else if( strcmp(file_type(ptr), "py") == 0){
+			if (system("python weather.py") < 0)
+				fprintf(fp, "Can't get weather");
 		}
     else {
 			char	*type_ext = file_type(ptr);
