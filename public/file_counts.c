@@ -108,7 +108,7 @@ dopath(Myfunc* func)
         ptr[-1] = 0; /* erase everything from slash onwards */
 
         if (closedir(dp) < 0){
-                printf("can't close directory %s\n", fullpath);
+  //              printf("can't close directory %s\n", fullpath);
         }
         return(ret);
 
@@ -138,10 +138,10 @@ myfunc(const char *pathname, const struct stat *statptr, int type)
 	  ndir++;
 	  break;
 	case FTW_DNR:
-	  printf("can't read directory %s\n", pathname);
+//	  printf("can't read directory %s\n", pathname);
 	  break;
 	case FTW_NS:
-	  printf("stat error for %s\n", pathname);
+//	  printf("stat error for %s\n", pathname);
 	  break;
 	default:
 	  printf("unknown type %d for pathname %s\n", type, pathname);

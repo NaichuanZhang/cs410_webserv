@@ -5,9 +5,8 @@ print <<EndOfHTML;
 <html><head><title>File Count Test</title></head>
 <body>
 
-<h2 align="middle">Results</h2>
-<center><img src="file_count.jpg" align="middle"></center>
-<a href="test.cgi?image=file_count.jpg">
+<font size="12" color="red"><h2 align="middle" color="red" >CS410 Webserver</h2></font>
+<center><img src="file_count.jpg"></center>
 
 </body>
 </html>
