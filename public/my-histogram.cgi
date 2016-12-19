@@ -1,5 +1,10 @@
 #!/usr/bin/perl
 
+#use CGI;
+#my $query = CGI->new;
+#my $dir = $ARGV[0]; //"hard code for terminal"
+#my $argument = $query->param('dir');
+
 my $dir = "/";
 
 sub mkimg{
