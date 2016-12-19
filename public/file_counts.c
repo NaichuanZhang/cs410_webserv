@@ -68,6 +68,7 @@ myftw(char *pathname, Myfunc *func)
 */
 	strncpy(fullpath, pathname, (PATH_MAX+1));
         fullpath[(PATH_MAX-1)] =0;
+	//free(fullpath);
         return(dopath(func));
 }
 
